@@ -1,16 +1,31 @@
 #!/bin/sh
 
-[ -f .env ] && . .env
+[ -f ./.env ] && . ./.env
 
 . "$(dirname "$0")/tg-utils.sh"
 
-
 event() {
-    cat
+    local data=$(cat)
+    local message=$(echo "$data" | jq '.message')
+    if [ "$message" != null ]; then
+        local text=$(echo "$message" | jq -r '.text')
+
+        local chat=$(echo "$message" | jq -r '.chat')
+        local chat_id=$(echo "$chat" | jq -r '.id')
+        local username=$(echo "$chat" | jq -r '.username')
+
+        jq -n '$ARGS.named' \
+            --arg chat_id "$chat_id" \
+            --arg text "@$username $text" \
+            | tg_api POST sendmessage -H 'Content-Type: application/json' -d "$(cat)" >/dev/null
+    fi
 }
 
 tg_init bot "$TG_API_KEY"
 
-tg_poll && tg_handle event telegram
+trap 'tg_save; exit 0' EXIT TERM INT
 
-# tg_save
+while :; do
+    tg_poll && tg_handle event
+    sleep 1
+done
