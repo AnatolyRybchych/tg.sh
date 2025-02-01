@@ -1,0 +1,16 @@
+#!/bin/sh
+
+[ -f .env ] && . .env
+
+. "$(dirname "$0")/tg-utils.sh"
+
+
+event() {
+    cat
+}
+
+tg_init bot "$TG_API_KEY"
+
+tg_poll && tg_handle event telegram
+
+# tg_save
